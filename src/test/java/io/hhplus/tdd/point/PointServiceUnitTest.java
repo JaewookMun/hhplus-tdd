@@ -4,6 +4,8 @@ import io.hhplus.tdd.database.FakePointHistoryTable;
 import io.hhplus.tdd.database.FakeUserPointTable;
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.exception.MinusPointException;
+import io.hhplus.tdd.exception.OutOfMaximumPointException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import java.util.List;
 import static io.hhplus.tdd.point.TransactionType.CHARGE;
 import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 테스트 케이스의 작성 및 작성 이유를 주석으로 작성
@@ -23,14 +26,16 @@ class PointServiceUnitTest {
 
     private PointService pointService;
 
-    private PointHistoryTable fakePointHistoryTable = new FakePointHistoryTable();
-    private UserPointTable fakeUserPointTable = new FakeUserPointTable();
+    private PointHistoryTable fakePointHistoryTable;
+    private UserPointTable fakeUserPointTable;
 
     /**
-     * 단위 테스트 진행을 위한 환경 초기화
+     * 독립적인 단위 테스트 진행을 위한 환경 초기화
      */
     @BeforeEach
     void setUp() {
+        fakePointHistoryTable = new FakePointHistoryTable();
+        fakeUserPointTable = new FakeUserPointTable();
         pointService = new PointService(fakeUserPointTable, fakePointHistoryTable);
     }
 
@@ -85,6 +90,19 @@ class PointServiceUnitTest {
     }
 
     /**
+     * 포인트 충전 시 최대 잔고를 초과할 경우 {@link OutOfMaximumPointException} 발생
+     */
+    @Test
+    @DisplayName("실패 케이스 - [정책] 포인트 최대 잔고 초과")
+    void maximumPointTest() {
+        // given
+        long overMaximum = Long.MAX_VALUE;
+
+        assertThatThrownBy(() -> pointService.chargePoint(1L, overMaximum))
+                .isInstanceOf(OutOfMaximumPointException.class);
+    }
+
+    /**
      * 성공 케이스 - '특정 유저의 포인트를 사용하는 기능'이 정삭적으로 동작하는 케이스
      */
     @Test
@@ -98,5 +116,18 @@ class PointServiceUnitTest {
 
         // then
         assertThat(userPoint.point()).isEqualTo(1500);
+    }
+
+    /**
+     * 포인트 사용 시 잔고가 부족할 경우 {@link MinusPointException} 발생
+     */
+    @Test
+    @DisplayName("실패 케이스 - [정책] 포인트 잔고 부족")
+    void minusPointTest() {
+        // given
+        long point = Long.MAX_VALUE;
+
+        assertThatThrownBy(() -> pointService.reducePoint(1L, point))
+                .isInstanceOf(MinusPointException.class);
     }
 }
