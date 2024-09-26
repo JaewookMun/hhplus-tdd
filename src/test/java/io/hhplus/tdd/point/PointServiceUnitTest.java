@@ -11,7 +11,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Random;
 
+import static io.hhplus.tdd.point.PointService.MAXIMUM_POINT;
 import static io.hhplus.tdd.point.TransactionType.CHARGE;
 import static java.lang.System.currentTimeMillis;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,8 +98,10 @@ class PointServiceUnitTest {
     @DisplayName("실패 케이스 - [정책] 포인트 최대 잔고 초과")
     void maximumPointTest() {
         // given
-        long overMaximum = Long.MAX_VALUE;
+        pointService.chargePoint(1L, 1L);
+        long overMaximum = MAXIMUM_POINT;
 
+        // when & then
         assertThatThrownBy(() -> pointService.chargePoint(1L, overMaximum))
                 .isInstanceOf(OutOfMaximumPointException.class);
     }
@@ -125,7 +129,7 @@ class PointServiceUnitTest {
     @DisplayName("실패 케이스 - [정책] 포인트 잔고 부족")
     void minusPointTest() {
         // given
-        long point = Long.MAX_VALUE;
+        long point = new Random().nextLong(MAXIMUM_POINT);
 
         assertThatThrownBy(() -> pointService.reducePoint(1L, point))
                 .isInstanceOf(MinusPointException.class);
